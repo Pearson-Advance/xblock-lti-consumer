@@ -74,7 +74,7 @@ from .exceptions import LtiError
 from .lti import LtiConsumer
 from .oauth import log_authorization_header
 from .outcomes import OutcomeService
-from .utils import _
+from .utils import _, resolve_custom_parameter_template
 
 log = logging.getLogger(__name__)
 
@@ -124,6 +124,7 @@ LTI_PARAMETERS = [
     'custom_component_graceperiod',
     'custom_component_display_name'
 ]
+CUSTOM_PARAMETER_TEMPLATE_TAGS = ('${', '}')
 
 
 def parse_handler_suffix(suffix):
@@ -702,6 +703,10 @@ class LtiConsumerXBlock(StudioEditableXBlockMixin, XBlock):
                 # LTI specs: 'custom_' should be prepended before each custom parameter, as pointed in link above.
                 if param_name not in LTI_PARAMETERS:
                     param_name = 'custom_' + param_name
+
+                if (param_value.startswith(CUSTOM_PARAMETER_TEMPLATE_TAGS[0]) and
+                        param_value.endswith(CUSTOM_PARAMETER_TEMPLATE_TAGS[1])):
+                    param_value = resolve_custom_parameter_template(self, param_value)
 
                 custom_parameters[six.text_type(param_name)] = six.text_type(param_value)
         return custom_parameters
