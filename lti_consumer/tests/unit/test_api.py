@@ -5,6 +5,7 @@ from unittest.mock import Mock, patch
 from urllib.parse import parse_qs, urlparse
 import ddt
 
+from ccx_keys.locator import CCXBlockUsageLocator
 from Cryptodome.PublicKey import RSA
 from django.test.testcases import TestCase
 from edx_django_utils.cache import get_cache_key
@@ -173,6 +174,34 @@ class TestGetOrCreateLocalLtiConfiguration(TestCase):
 
         # Check if the object was created
         self.assertEqual(LtiConfiguration.objects.all().count(), 1)
+        self.assertEqual(lti_config_retrieved, lti_config)
+
+    @patch('lti_consumer.api.isinstance')
+    def test_retrieve_ccx_config(self, mock_isinstance):
+        """
+        Check if the API retrieves a model using the master course location of a CCX location.
+        """
+        master_location = 'block-v1:course+test+2020+type@problem+block@test'
+        ccx_location = Mock(return_value='ccx-block-v1:course+test+2020+type@problem+block@test')
+        ccx_location.to_block_locator.return_value = master_location
+        mock_isinstance.return_value = True
+
+        # Create master course location lti_config.
+        lti_config = LtiConfiguration.objects.create(
+            location=master_location,
+        )
+
+        # Get CCX location lti_config.
+        lti_config_retrieved = _get_or_create_local_lti_config(
+            lti_version="",
+            block_location=ccx_location,
+        )
+
+        # Check CCX attribute was inspected on location.
+        mock_isinstance.assert_called_once_with(ccx_location, CCXBlockUsageLocator)
+        # Check CCX block locator was trnasformed to block locator.
+        ccx_location.to_block_locator.assert_called_once_with()
+        # Check CCX lti_config is equal to master course lti_config.
         self.assertEqual(lti_config_retrieved, lti_config)
 
     def test_update_lti_version(self):

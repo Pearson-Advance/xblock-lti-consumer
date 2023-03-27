@@ -12,6 +12,7 @@ XBlock
 xblock-utils
 pycryptodomex
 pyjwkest
+edx-ccx-keys                 # Opaque keys for Custom Courses.
 edx-opaque-keys[django]
 django-filter
 jsonfield
