@@ -112,6 +112,8 @@ docopt==0.6.2
     # via coveralls
 docutils==0.19
     # via readme-renderer
+edx-ccx-keys==1.2.1
+    # via -r requirements/base.txt
 edx-django-utils==5.2.0
     # via
     #   -r requirements/base.txt
@@ -119,7 +121,9 @@ edx-django-utils==5.2.0
 edx-lint==5.3.0
     # via -r requirements/test.in
 edx-opaque-keys[django]==2.3.0
-    # via -r requirements/base.txt
+    # via
+    #   -r requirements/base.txt
+    #   edx-ccx-keys
 fs==2.4.16
     # via
     #   -r requirements/base.txt
@@ -308,6 +312,7 @@ six==1.16.0
     # via
     #   -r requirements/base.txt
     #   bleach
+    #   edx-ccx-keys
     #   edx-lint
     #   fs
     #   fs-s3fs
