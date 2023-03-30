@@ -100,11 +100,12 @@ LTI_1P1_ROLE_MAP = {
     'instructor': 'Instructor',
 }
 CUSTOM_PARAMETER_SEPARATOR = '='
-CUSTOM_PARAMETER_TEMPLATE_PATTERN = r'\${ *\w+ *}'
-CUSTOM_PARAMETER_TEMPLATE_REGEX = re.compile(CUSTOM_PARAMETER_TEMPLATE_PATTERN)
+# Allow a key-pair key and value to contain any character except "=".
 CUSTOM_PARAMETER_REGEX = re.compile(
-    rf'^( *\w+ *{CUSTOM_PARAMETER_SEPARATOR} *(\w+|{CUSTOM_PARAMETER_TEMPLATE_PATTERN}) *)$',
+    rf'^([^{CUSTOM_PARAMETER_SEPARATOR}]+{CUSTOM_PARAMETER_SEPARATOR}[^{CUSTOM_PARAMETER_SEPARATOR}]+)$',
 )
+# Catch a value enclosed by ${}, the value enclosed can contain any charater except "=".
+CUSTOM_PARAMETER_TEMPLATE_REGEX = re.compile(r'^(\${[^%s]+})$' % CUSTOM_PARAMETER_SEPARATOR)
 
 
 def parse_handler_suffix(suffix):
@@ -651,7 +652,7 @@ class LtiConsumerXBlock(StudioEditableXBlockMixin, XBlock):
         if not all(map(CUSTOM_PARAMETER_REGEX.match, data.custom_parameters)):
             _ = self.runtime.service(self, 'i18n').ugettext
             validation.add(ValidationMessage(ValidationMessage.ERROR, str(
-                _('Custom Parameters should be strings in "x=y" or "x=${y}" format'),
+                _('Custom Parameters should be strings in "x=y" format.'),
             )))
 
         # keyset URL and public key are mutually exclusive
