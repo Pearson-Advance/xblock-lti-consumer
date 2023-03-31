@@ -38,14 +38,6 @@ HTML_ERROR_MESSAGE = '<h3 class="error_message">'
 HTML_LAUNCH_MODAL_BUTTON = 'btn-lti-modal'
 HTML_LAUNCH_NEW_WINDOW_BUTTON = 'btn-lti-new-window'
 HTML_IFRAME = '<iframe'
-VALID_CUSTOM_PARAMETERS = (
-    ['x=y'], ['  x  =  y  '], ['x=${y}'], ['  x  =  ${y} '], ['x=${  y  }'],
-    ['x=y', 'x=${y}', '  x  =  y  ', '  x  =  ${y} ', 'x=${  y  }'],
-)
-INVALID_CUSTOM_PARAMETERS = (
-    ['x'], ['x='], ['x=y y'], ['x={y}'], ['x={y'], ['x=y}'], ['x=*'], ['=y'], ['x x=y'], ['*=y'],
-    ['x', 'x=', 'x=y y', 'x={y}', 'x={y', 'x=y}', 'x=*', '=y', 'x x=y', '*=y'],
-)
 
 
 class TestLtiConsumerXBlock(TestCase):
@@ -148,7 +140,10 @@ class TestProperties(TestLtiConsumerXBlock):
         """
         self.assertEqual(self.xblock.context_id, str(self.xblock.scope_ids.usage_id.context_key))
 
-    @ddt.data(*VALID_CUSTOM_PARAMETERS)
+    @ddt.data(
+        ['x=y'], [' x x = y y '], ['x= '], [' =y'], [' = '],
+        ['x=y', ' x x = y y ', 'x= ', ' =y', ' = '],
+    )
     def test_validate_with_valid_custom_parameters(self, custom_parameters):
         """
         Test if all custom_parameters item are valid
@@ -172,7 +167,7 @@ class TestProperties(TestLtiConsumerXBlock):
             mock_validation_message('error', 'Custom Parameters must be a list'),
         )
 
-    @ddt.data(*INVALID_CUSTOM_PARAMETERS)
+    @ddt.data(['x'], ['x='], ['=y'], ['x==y'], ['x', 'x=', '=y', 'x==y'])
     @patch('lti_consumer.lti_xblock.ValidationMessage')
     @patch.object(Validation, 'add')
     def test_validate_with_invalid_custom_parameters(self, custom_parameters, add_mock, mock_validation_message):
@@ -185,7 +180,7 @@ class TestProperties(TestLtiConsumerXBlock):
         self.xblock.validate()
 
         add_mock.assert_called_once_with(
-            mock_validation_message('error', 'Custom Parameters should be strings in "x=y" or "x=${y}" format'),
+            mock_validation_message('error', 'Custom Parameters should be strings in "x=y" format.'),
         )
 
     def test_role(self):
