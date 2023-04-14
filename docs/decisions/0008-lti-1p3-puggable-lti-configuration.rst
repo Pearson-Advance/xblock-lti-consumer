@@ -26,6 +26,9 @@ has been stopped, currently, the remaining efforts to reach LTI 1.3 support are:
 - Remove XBlock dependencies from LTI 1.3 launches (features related to LTI 1.3
   authentication, for example, the keyset URL and the token URL).
 
+Why do we need this?
+====================
+
 This feature is important because it will allow us to eliminate the need to
 configure multiple LTI tools for each LTI 1.3 consumer XBlock (course authors
 may not have access to deploy LTI 1.3 tools) and allow LTI 1.3 consumer XBlock
