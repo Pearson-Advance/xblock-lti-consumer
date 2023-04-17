@@ -84,3 +84,4 @@ References
 .. [3] #210 Pluggable/reusable LTI configuration: https://github.com/openedx/xblock-lti-consumer/pull/210
 .. [4] #239 Support for external LTI configurations using openedx-filters: https://github.com/openedx/xblock-lti-consumer/pull/239
 .. [5] Openedx LTI Store: https://github.com/open-craft/openedx-ltistore
+.. [6] #273 Remove XBlock location dependencies from LTI 1.3 launches: https://github.com/openedx/xblock-lti-consumer/issues/273
