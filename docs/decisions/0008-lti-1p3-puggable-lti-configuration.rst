@@ -55,18 +55,21 @@ Changes on xblock-lti-consumer
 - Modify the get_lti_1p3_launch_info function to show the values from the
   external configuration on the author view.
 
+Note: We aren't completely clear on what might need to change appart from
+_get_lti_1p3_consumer and get_lti_1p3_launch_info in xblock-lti-consumer
+to allow the use of LTI 1.3 external configurations.
+
 Changes on lti_store
 ~~~~~~~~~~~~~~~~~~~~
 
-- Add an LTI 1.3 external configuration model to lti_store with fields for the
+- Add LTI 1.3 fields to lti_store ExternalLtiConfiguration model for the
   client ID, private key, private key ID, public key or keyset URL, and
-  optionally the deployment id.
-- Add the LTI 1.3 external configuration model to the admin view and display
-  the name, slug, token URL, keyset URL, and filter key.
+  deployment id.
+- Add LTI 1.3 has a version choice on ExternalLtiConfiguration model.
+- Add a clean method to ExternalLtiConfiguration model to avoid mixing LTI 1.1
+  and LTI 1.3 fields.
 - Add an access token view to lti_store for LTI 1.3 external configurations.
 - Add a keyset view to lti_store for LTI 1.3 external configurations.
-- Modify the lti_store pipeline GetLtiConfigurations to also include LTI 1.3
-  external configurations in the result.
 
 Note: The private key ID on the LTI 1.3 external configuration model can be an
 auto-generated uuid4, just as how it's already being done on the
