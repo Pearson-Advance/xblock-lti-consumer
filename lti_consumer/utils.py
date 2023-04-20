@@ -7,6 +7,7 @@ from urllib.parse import urlencode
 
 from django.conf import settings
 from edx_django_utils.cache import get_cache_key, TieredCache
+from ccx_keys.locator import CCXBlockUsageLocator
 
 from lti_consumer.plugin.compat import (
     get_external_config_waffle_flag,
@@ -319,3 +320,10 @@ def check_token_claim(token, claim_key, expected_value=None, invalid_claim_error
     if expected_value and claim_value != expected_value:
         msg = invalid_claim_error_msg if invalid_claim_error_msg else f"The claim {claim_key} value is invalid."
         raise InvalidClaimValue(msg)
+
+
+def is_ccx_location(location):
+    """
+    Check if the block location is from a CCX.
+    """
+    return isinstance(location, CCXBlockUsageLocator)

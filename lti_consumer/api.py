@@ -7,7 +7,6 @@ return plaintext to allow easy testing/mocking.
 
 import json
 
-from ccx_keys.locator import CCXBlockUsageLocator
 from opaque_keys.edx.keys import CourseKey
 
 from lti_consumer.lti_1p3.constants import LTI_1P3_ROLE_MAP
@@ -35,12 +34,6 @@ def _get_or_create_local_lti_config(lti_version, block_location,
     the XBlock to be the source of truth for the LTI version, which is a user-centric perspective we've adopted.
     This allows XBlock users to update the LTI version without needing to update the database.
     """
-    # Replace CCX block locator with master course block locator to allow CCX launch to work.
-    # The reason behind the change is to avoid creating a new LtiConfiguration for CCXs and
-    # reuse Master's for which its client_id is already recognized by the tool provider.
-    if isinstance(block_location, CCXBlockUsageLocator):
-        block_location = block_location.to_block_locator()
-
     # The create operation is only performed when there is no existing configuration for the block
     lti_config, _ = LtiConfiguration.objects.get_or_create(location=block_location)
 
