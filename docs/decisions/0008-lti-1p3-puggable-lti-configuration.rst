@@ -59,6 +59,14 @@ Note: We aren't completely clear on what might need to change appart from
 _get_lti_1p3_consumer and get_lti_1p3_launch_info in xblock-lti-consumer
 to allow the use of LTI 1.3 external configurations.
 
+We also need to modify the LtiConfiguration model to sync the changes on
+the config store field and external ID field on all CCX XBlocks related to
+the master courser XBlock beign modified, this could be achieved by two method,
+first by copying the config store and external ID values when a CCX XBlock
+LtiConfiguration is beign created and by also sync changes from the master
+LtiConfiguration with a post save signal, in that signal we can iterate over
+any CCX LtiConfiguration related and sync the config ID and external ID values.
+
 Changes on lti_store
 ~~~~~~~~~~~~~~~~~~~~
 
