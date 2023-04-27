@@ -5,6 +5,8 @@ from unittest.mock import Mock, patch
 
 import ddt
 from django.test.testcases import TestCase
+from opaque_keys.edx.keys import UsageKey
+from ccx_keys.locator import CCXBlockUsageLocator
 
 from lti_consumer.lti_1p3.constants import LTI_1P3_CONTEXT_TYPE
 from lti_consumer.utils import (
@@ -12,6 +14,7 @@ from lti_consumer.utils import (
     get_lti_1p3_launch_data_cache_key,
     cache_lti_1p3_launch_data,
     get_data_from_cache,
+    is_ccx_location,
 )
 
 
@@ -113,3 +116,27 @@ class TestCacheUtilities(TestCase):
             self.assertEqual(value, "value")
         else:
             self.assertIsNone(value)
+
+
+class TestCCXUtilities(TestCase):
+    """
+    Tests for the CCX utilities in the utils module.
+    """
+
+    def test_is_ccx_location_with_ccx_location(self):
+        """
+        Test is_ccx_location function with CCX location.
+        """
+        location = CCXBlockUsageLocator.from_string('ccx-block-v1:course+test+2020+ccx@1+type@problem+block@test')
+
+        # Check LTI configuration with CCX location returns True.
+        self.assertEqual(is_ccx_location(location), True)
+
+    def test_is_ccx_location_without_ccx_location(self):
+        """
+        Test is_ccx_location function without CCX location.
+        """
+        location = UsageKey.from_string('block-v1:course+test+2020+type@problem+block@test')
+
+        # Check LTI configuration without CCX location returns False.
+        self.assertEqual(is_ccx_location(location), False)

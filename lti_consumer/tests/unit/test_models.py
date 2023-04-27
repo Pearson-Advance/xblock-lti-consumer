@@ -3,7 +3,7 @@ Unit tests for LTI models.
 """
 from contextlib import contextmanager
 from datetime import datetime, timedelta
-from unittest.mock import patch
+from unittest.mock import PropertyMock, patch
 
 import ddt
 from Cryptodome.PublicKey import RSA
@@ -349,6 +349,114 @@ class TestLtiConfigurationModel(TestCase):
         regenerated_public_key = lti_config.lti_1p3_public_jwk
         lti_config.refresh_from_db()
         self.assertEqual(regenerated_public_key, public_key)
+
+    @patch('lti_consumer.models.is_ccx_location')
+    @patch.object(LtiConfiguration.objects, 'filter')
+    def test_ccx_master_configuration_with_configuration(self, lti_configuration_filter_mock, is_ccx_location_mock):
+        """
+        Test CCX master block configuration property with master block configuration.
+        """
+        is_ccx_location_mock.return_value = True
+        lti_configuration_filter_mock.return_value.first.return_value = self.lti_1p3_config
+        self.lti_1p3_config.location = 'ccx-block-v1:course+test+2020+ccx@1+type@problem+block@test'
+
+        # Check if CCX master configuration is found.
+        self.assertEqual(self.lti_1p3_config.ccx_master_configuration, self.lti_1p3_config)
+        is_ccx_location_mock.assert_called_once_with(self.lti_1p3_config.location)
+        lti_configuration_filter_mock.assert_called_once_with(
+            location=self.lti_1p3_config.location.to_block_locator(),
+        )
+        lti_configuration_filter_mock.return_value.first.assert_called_once_with()
+
+    @patch('lti_consumer.models.is_ccx_location')
+    @patch.object(LtiConfiguration.objects, 'filter')
+    def test_ccx_master_configuration_without_configuration(self, lti_configuration_filter_mock, is_ccx_location_mock):
+        """
+        Test CCX master block configuration property without master block configuration.
+        """
+        is_ccx_location_mock.return_value = True
+        lti_configuration_filter_mock.return_value.first.return_value = None
+        self.lti_1p3_config.location = 'ccx-block-v1:course+test+2020+ccx@1+type@problem+block@test'
+
+        # Check if CCX master configuration is not found.
+        self.assertEqual(self.lti_1p3_config.ccx_master_configuration, None)
+        is_ccx_location_mock.assert_called_once_with(self.lti_1p3_config.location)
+        lti_configuration_filter_mock.assert_called_once_with(
+            location=self.lti_1p3_config.location.to_block_locator(),
+        )
+        lti_configuration_filter_mock.return_value.first.assert_called_once_with()
+
+    @patch('lti_consumer.models.is_ccx_location')
+    @patch.object(LtiConfiguration.objects, 'filter')
+    def test_ccx_master_configuration_without_ccx_location(self, lti_configuration_filter_mock, is_ccx_location_mock):
+        """
+        Test CCX master block configuration property without a CCX location.
+        """
+        is_ccx_location_mock.return_value = False
+
+        # Check if is not CCX location.
+        self.assertEqual(self.lti_1p3_config.ccx_master_configuration, None)
+        is_ccx_location_mock.assert_called_once_with(self.lti_1p3_config.location)
+        lti_configuration_filter_mock.assert_not_called()
+        lti_configuration_filter_mock.return_value.first.assert_not_called()
+
+    @patch.object(LtiConfiguration, 'ccx_master_configuration', new_callable=PropertyMock)
+    def test_save_without_ccx_master_configuration(self, ccx_master_configuration_mock):
+        """
+        Test model save method with CCX location and no CCX master configuration.
+        """
+        ccx_master_configuration_mock.return_value = None
+
+        # Check ValidationError is raised when CCX master configuration is not found.
+        with self.assertRaises(ValidationError) as exc:
+            LtiConfiguration.objects.create(
+                version=LtiConfiguration.LTI_1P3,
+                config_store=LtiConfiguration.CONFIG_ON_XBLOCK,
+                location='ccx-block-v1:course+test+2020+ccx@1+type@problem+block@test',
+            )
+            self.assertEqual(
+                'CCX master course LTI configuration is required to create.',
+                exc.exception,
+            )
+
+    @patch.object(LtiConfiguration, 'ccx_master_configuration', new_callable=PropertyMock)
+    def test_copy_missing_ccx_keys(self, ccx_master_configuration_mock):
+        """
+        Checks if missing keys are copied to CCX block from master block configuration.
+        """
+        self.lti_1p1_config.lti_1p3_internal_public_jwk = '{}'
+        ccx_master_configuration_mock.return_value = self.lti_1p1_config
+        ccx_lti_config = LtiConfiguration.objects.create(
+            version=LtiConfiguration.LTI_1P3,
+            config_store=LtiConfiguration.CONFIG_ON_XBLOCK,
+            location='ccx-block-v1:course+test+2020+ccx@1+type@problem+block@test',
+        )
+
+        # Check that model fields are empty
+        self.assertFalse(ccx_lti_config.lti_1p3_internal_private_key)
+        self.assertFalse(ccx_lti_config.lti_1p3_internal_private_key_id)
+        self.assertFalse(ccx_lti_config.lti_1p3_internal_public_jwk)
+
+        # Copy CCX master LTI configuration.
+        _ = ccx_lti_config.lti_1p3_public_jwk
+
+        # Check if keys were copied.
+        self.assertEqual(
+            ccx_lti_config.lti_1p3_internal_private_key,
+            self.lti_1p1_config.lti_1p3_internal_private_key,
+        )
+        self.assertEqual(
+            ccx_lti_config.lti_1p3_internal_private_key_id,
+            self.lti_1p1_config.lti_1p3_internal_private_key_id,
+        )
+        self.assertEqual(
+            ccx_lti_config.lti_1p3_internal_public_jwk,
+            self.lti_1p1_config.lti_1p3_internal_public_jwk,
+        )
+        self.assertEqual(
+            ccx_lti_config.lti_1p3_client_id,
+            self.lti_1p1_config.lti_1p3_client_id,
+        )
 
     def test_clean(self):
         self.lti_1p3_config.config_store = self.lti_1p3_config.CONFIG_ON_XBLOCK
