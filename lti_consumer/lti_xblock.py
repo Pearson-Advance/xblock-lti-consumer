@@ -1507,6 +1507,18 @@ class LtiConsumerXBlock(StudioEditableXBlockMixin, XBlock):
         """
         custom_parameters = {}
 
+        # Get site-wide extra parameters from processor functions.
+        for processor in self.get_parameter_processors():
+            try:
+                default_params = getattr(processor, 'lti_xblock_default_params', {})
+                custom_parameters.update(default_params)
+                custom_parameters.update(processor(self) or {})
+            except Exception:  # pylint: disable=broad-except
+                # Log the error without causing a 500-error.
+                # Useful for catching casual runtime errors in the processors.
+                log.exception('Error in XBlock LTI parameter processor "%s"', processor)
+
+        # Get custom parameters from XBlock settings.
         for parameter in self.custom_parameters:
             # Split parameter into key, value and remove leading, trailing spaces.
             key, value = map(str.strip, parameter.split(CUSTOM_PARAMETER_SEPARATOR, 1))
