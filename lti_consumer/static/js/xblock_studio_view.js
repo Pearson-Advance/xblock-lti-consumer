@@ -67,7 +67,7 @@ function LtiConsumerXBlockInitStudio(runtime, element) {
 
 
     /**
-     * Return fields that should be hidden based on the selected config type. 
+     * Return fields that should be hidden based on the selected config type.
      *
      *  new - Show all the LTI 1.1/1.3 config fields
      *  database - Do not show the LTI 1.1/1.3 config fields
@@ -125,6 +125,9 @@ function LtiConsumerXBlockInitStudio(runtime, element) {
     function toggleLtiFields() {
         const configFields = lti1P1FieldList.concat(lti1P3FieldList);
         const hiddenFields = new Set();
+
+        // Include the external_config field into configFields list.
+        configFields.push("external_config")
 
         // Start with the assumption that all configFields should be visible. After that, we whittle down the
         // list of visible fields based on the values of those fields.
