@@ -5,8 +5,6 @@ from unittest.mock import Mock, patch
 
 import ddt
 from django.test.testcases import TestCase
-from opaque_keys.edx.keys import UsageKey
-from ccx_keys.locator import CCXBlockUsageLocator
 
 from lti_consumer.lti_1p3.constants import LTI_1P3_CONTEXT_TYPE
 from lti_consumer.utils import (
@@ -14,7 +12,7 @@ from lti_consumer.utils import (
     get_lti_1p3_launch_data_cache_key,
     cache_lti_1p3_launch_data,
     get_data_from_cache,
-    is_ccx_location,
+    model_to_dict,
 )
 
 
@@ -118,25 +116,43 @@ class TestCacheUtilities(TestCase):
             self.assertIsNone(value)
 
 
-class TestCCXUtilities(TestCase):
+class TestModelToDict(TestCase):
     """
-    Tests for the CCX utilities in the utils module.
+    Tests for the model_to_dict function.
     """
 
-    def test_is_ccx_location_with_ccx_location(self):
-        """
-        Test is_ccx_location function with CCX location.
-        """
-        location = CCXBlockUsageLocator.from_string('ccx-block-v1:course+test+2020+ccx@1+type@problem+block@test')
+    def setUp(self):
+        super().setUp()
+        self.model_object = Mock()
 
-        # Check LTI configuration with CCX location returns True.
-        self.assertEqual(is_ccx_location(location), True)
-
-    def test_is_ccx_location_without_ccx_location(self):
+    @patch('lti_consumer.utils.copy.deepcopy', return_value={'test': 'test', '_test': 'test'})
+    def test_without_exclude_argument(self, deepcopy_mock):
         """
-        Test is_ccx_location function without CCX location.
+        Test model_to_dict function with exclude argument.
         """
-        location = UsageKey.from_string('block-v1:course+test+2020+type@problem+block@test')
+        self.assertEqual(model_to_dict(self.model_object), {'test': 'test'})
+        deepcopy_mock.assert_called_once_with(self.model_object.__dict__)
 
-        # Check LTI configuration without CCX location returns False.
-        self.assertEqual(is_ccx_location(location), False)
+    @patch('lti_consumer.utils.copy.deepcopy', return_value={'test': 'test', '_test': 'test'})
+    def test_with_exclude_argument(self, deepcopy_mock):
+        """
+        Test model_to_dict function with exclude argument.
+        """
+        self.assertEqual(model_to_dict(self.model_object, ['test']), {})
+        deepcopy_mock.assert_called_once_with(self.model_object.__dict__)
+
+    @patch('lti_consumer.utils.copy.deepcopy', side_effect=AttributeError())
+    def test_with_attribute_error(self, deepcopy_mock):
+        """
+        Test model_to_dict function with AttributeError exception.
+        """
+        self.assertEqual(model_to_dict(self.model_object), {})
+        deepcopy_mock.assert_called_once_with(self.model_object.__dict__)
+
+    @patch('lti_consumer.utils.copy.deepcopy', side_effect=TypeError())
+    def test_with_type_error(self, deepcopy_mock):
+        """
+        Test model_to_dict function with TypeError exception.
+        """
+        self.assertEqual(model_to_dict(self.model_object), {})
+        deepcopy_mock.assert_called_once_with(self.model_object.__dict__)

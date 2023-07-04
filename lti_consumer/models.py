@@ -8,10 +8,10 @@ import json
 from django.db import models
 from django.core.validators import MinValueValidator
 from django.core.exceptions import ValidationError
-from django.utils.functional import cached_property
 
 from jsonfield import JSONField
 from Cryptodome.PublicKey import RSA
+from ccx_keys.locator import CCXBlockUsageLocator
 from opaque_keys.edx.django.models import CourseKeyField, UsageKeyField
 from opaque_keys.edx.keys import CourseKey
 from config_models.models import ConfigurationModel
@@ -29,7 +29,7 @@ from lti_consumer.utils import (
     get_lti_ags_lineitems_url,
     get_lti_deeplinking_response_url,
     get_lti_nrps_context_membership_url,
-    is_ccx_location,
+    model_to_dict,
 )
 
 log = logging.getLogger(__name__)
@@ -234,19 +234,6 @@ class LtiConfiguration(models.Model):
         help_text='Enable LTI Proctoring Services',
     )
 
-    @cached_property
-    def ccx_master_configuration(self):
-        """
-        CCX master block LTI configuration.
-
-        On configurations with a CCX location, return the configuration of the original master course location.
-        if configurations is not from a CCX location or the configuration is not found, return None.
-        """
-        if not is_ccx_location(self.location):
-            return None
-
-        return LtiConfiguration.objects.filter(location=self.location.to_block_locator()).first()  # pylint: disable=no-member
-
     def clean(self):
         if self.config_store == self.CONFIG_ON_XBLOCK and self.location is None:
             raise ValidationError({
@@ -273,11 +260,40 @@ class LtiConfiguration(models.Model):
         if consumer is None:
             raise ValidationError(_("Invalid LTI configuration."))
 
-    def save(self, *args, **kwargs):
-        # Only allow creation with a CCX location if CCX master configuration exists.
-        if not self.pk and is_ccx_location(self.location) and not self.ccx_master_configuration:
-            raise ValidationError(_('CCX master course LTI configuration is required to create.'))
+    def sync_configurations(self):
+        """Syncronize main/children configurations.
 
+        This method will synchronize the field values of main/children configurations.
+        On a configuration with a CCX location, it will copy the values from the main course configuration,
+        otherwise, it will try to query any children configuration and update their fields using
+        the current configuration values.
+        """
+        EXCLUDED_FIELDS = ['id', 'config_id', 'location']
+
+        if isinstance(self.location, CCXBlockUsageLocator):
+            # Query main configuration using main location.
+            main_config = LtiConfiguration.objects.filter(location=self.location.to_block_locator()).first()
+            # Copy fields from main configuration.
+            for field in model_to_dict(main_config, EXCLUDED_FIELDS).items():
+                setattr(self, field[0], field[1])
+        else:
+            try:
+                # Query child CCX configurations using location block ID and CCX namespace.
+                child_configs = LtiConfiguration.objects.filter(
+                    location__endswith=str(self.location).split('@')[-1],
+                ).filter(
+                    location__startswith=CCXBlockUsageLocator.CANONICAL_NAMESPACE,
+                ).exclude(id=self.pk)
+                # Copy fields to child CCX configurations.
+                child_configs.update(**model_to_dict(self, EXCLUDED_FIELDS))
+            except IndexError:
+                log.exception(
+                    f'Failed to query children CCX LTI configurations: '
+                    f'Failed to parse main LTI configuration location: {self.location}',
+                )
+
+    def save(self, *args, **kwargs):
+        self.sync_configurations()
         super().save(*args, **kwargs)
 
     def _generate_lti_1p3_keys_if_missing(self):
@@ -288,23 +304,6 @@ class LtiConfiguration(models.Model):
         The LMS provides a keyset endpoint, so key rotations don't cause any issues
         for LTI launches (as long as they have a different kid).
         """
-        # Copy fields from CCX master configuration if exists.
-        # If a key is missing on a configuration with a CCX location,
-        # copy the keys and client ID from the CCX master configuration.
-        if self.ccx_master_configuration and not all([
-            self.lti_1p3_internal_private_key,
-            self.lti_1p3_internal_private_key_id,
-            self.lti_1p3_internal_public_jwk,
-        ]):
-            # Copy keys from CCX master configuration.
-            self.lti_1p3_internal_private_key = self.ccx_master_configuration.lti_1p3_internal_private_key
-            self.lti_1p3_internal_private_key_id = self.ccx_master_configuration.lti_1p3_internal_private_key_id
-            self.lti_1p3_internal_public_jwk = self.ccx_master_configuration.lti_1p3_internal_public_jwk
-            # Copy client ID from CCX master configuration.
-            self.lti_1p3_client_id = self.ccx_master_configuration.lti_1p3_client_id
-
-            return self.save()
-
         # Generate new private key if not present
         if not self.lti_1p3_internal_private_key:
             # Private key
