@@ -1,13 +1,13 @@
 """
 Utility functions for LTI Consumer block
 """
+import copy
 import logging
 from importlib import import_module
 from urllib.parse import urlencode
 
 from django.conf import settings
 from edx_django_utils.cache import get_cache_key, TieredCache
-from ccx_keys.locator import CCXBlockUsageLocator
 
 from lti_consumer.plugin.compat import (
     get_external_config_waffle_flag,
@@ -322,8 +322,25 @@ def check_token_claim(token, claim_key, expected_value=None, invalid_claim_error
         raise InvalidClaimValue(msg)
 
 
-def is_ccx_location(location):
+def model_to_dict(model_object, exclude=None):
     """
-    Check if the block location is from a CCX.
+    Get dictionary from model object.
+
+    This function will create a copy of a model object in a dictionary,
+    with all private and excluded fields removed.
     """
-    return isinstance(location, CCXBlockUsageLocator)
+    if not exclude:
+        exclude = []
+
+    try:
+        # Copy model object fields.
+        object_fields = copy.deepcopy(model_object.__dict__)
+
+        # Remove private and excluded fields.
+        for key in list(object_fields):
+            if key.startswith('_') or key in exclude:
+                object_fields.pop(key, None)
+
+        return object_fields
+    except (AttributeError, TypeError):
+        return {}
