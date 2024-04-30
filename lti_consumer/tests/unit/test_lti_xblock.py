@@ -536,13 +536,10 @@ class TestEditableFields(TestLtiConsumerXBlock):
 
     def setUp(self):
         super().setUp()
-        self.mock_filter_enabled_patcher = patch("lti_consumer.lti_xblock.external_config_filter_enabled")
         self.mock_database_config_enabled_patcher = patch("lti_consumer.lti_xblock.database_config_enabled")
-        self.mock_filter_enabled = self.mock_filter_enabled_patcher.start()
         self.mock_database_config_enabled = self.mock_database_config_enabled_patcher.start()
 
     def tearDown(self):
-        self.mock_filter_enabled_patcher.stop()
         self.mock_database_config_enabled_patcher.stop()
         super().tearDown()
 
@@ -604,50 +601,18 @@ class TestEditableFields(TestLtiConsumerXBlock):
             )
         )
 
-    def test_external_config_fields_are_editable_only_when_waffle_flag_is_set(self):
-        """
-        Test that the external configuration fields are editable only when the waffle flag is set.
-        """
-        self.mock_filter_enabled.return_value = True
-        self.assertTrue(self.are_fields_editable(fields=['config_type', 'external_config']))
-
-        self.mock_filter_enabled.return_value = False
-        self.assertFalse(self.are_fields_editable(fields=['config_type', 'external_config']))
-
-    @ddt.idata(product([True, False], [True, False]))
-    @ddt.unpack
-    def test_database_config_fields_are_editable_only_when_waffle_flag_is_set(self, filter_enabled, db_enabled):
-        """
-        Test that the database configuration fields are editable only when the waffle flag is set.
-        """
-        self.mock_filter_enabled.return_value = filter_enabled
-
-        assert_fn = None
-        # If either flag is enabled, 'config_type' should be editable.
-        if db_enabled or filter_enabled:
-            assert_fn = self.assertTrue
-        else:
-            assert_fn = self.assertFalse
-
-        self.mock_database_config_enabled.return_value = db_enabled
-
-        assert_fn(self.are_fields_editable(fields=['config_type']))
-
-    @ddt.idata(product([True, False], [True, False]))
-    @ddt.unpack
-    def test_config_type_values(self, filter_enabled, db_enabled):
+    @ddt.data(True, False)
+    def test_config_type_values(self, db_enabled):
         """
         Test that only the appropriate values for config_type are available as options, depending on the state of the
         appropriate waffle flags.
         """
-        self.mock_filter_enabled.return_value = filter_enabled
         self.mock_database_config_enabled.return_value = db_enabled
 
         values = valid_config_type_values(self.xblock)
 
-        expected_values = ["new"]
-        if self.mock_filter_enabled:
-            expected_values.append('external')
+        expected_values = ["new", "external"]
+
         if self.mock_database_config_enabled:
             expected_values.append('database')
 
@@ -1667,11 +1632,8 @@ class TestLtiConsumer1p3XBlock(TestCase):
         }
         self.xblock = make_xblock('lti_consumer', LtiConsumerXBlock, self.xblock_attributes)
 
-        self.mock_filter_enabled_patcher = patch("lti_consumer.lti_xblock.external_config_filter_enabled")
         self.mock_database_config_enabled_patcher = patch("lti_consumer.lti_xblock.database_config_enabled")
-        self.mock_filter_enabled = self.mock_filter_enabled_patcher.start()
         self.mock_database_config_enabled = self.mock_database_config_enabled_patcher.start()
-        self.addCleanup(self.mock_filter_enabled_patcher.stop)
         self.addCleanup(self.mock_database_config_enabled_patcher.stop)
 
     @patch.object(LtiConsumerXBlock, 'get_parameter_processors')
