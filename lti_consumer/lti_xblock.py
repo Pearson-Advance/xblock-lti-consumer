@@ -78,7 +78,6 @@ from .track import track_event
 from .utils import (
     _,
     resolve_custom_parameter_template,
-    external_config_filter_enabled,
     external_user_id_1p1_launches_enabled,
     database_config_enabled,
 )
@@ -142,14 +141,12 @@ def valid_config_type_values(block):
     valid value options, depending on the state of the appropriate toggle.
     """
     values = [
-        {"display_name": _("Configuration on block"), "value": "new"}
+        {"display_name": _("Configuration on block"), "value": "new"},
+        {"display_name": _("Reusable Configuration"), "value": "external"},
     ]
 
     if database_config_enabled(block.scope_ids.usage_id.context_key):
         values.append({"display_name": _("Database Configuration"), "value": "database"})
-
-    if external_config_filter_enabled(block.scope_ids.usage_id.context_key):
-        values.append({"display_name": _("Reusable Configuration"), "value": "external"})
 
     return values
 
@@ -724,30 +721,15 @@ class LtiConsumerXBlock(StudioEditableXBlockMixin, XBlock):
         currently selected for these fields. Because editable_fields defines a list of fields when that's used rendering
         the Studio edit view, it cannot support the dynamic experience we want the user to have when editing the XBlock.
         This property should return the set of all properties the user should be able to modify based on the current
-        environment. For example, if the external_config_filter_enabled flag is not enabled, the external_config field
-        should not be a part of editable_fields, because no user can edit this field in this case. On the other hand, if
-        the currently selected config_type is 'database', the fields that are otherwise stored in the database should
-        still be a part of editable_fields, because a user may select a different config_type from the menu, and we want
-        those fields to become editable at that time. The Javascript will determine when to show or to hide a given
-        field.
+        environment. For example, if the currently selected config_type is 'database', the fields that are otherwise
+        stored in the database should still be a part of editable_fields, because a user may select a different
+        config_type from the menu, and we want those fields to become editable at that time. The Javascript will
+        determine when to show or to hide a given field.
 
-        Fields that are potentially filtered out include "config_type", "external_config", "ask_to_send_username", and
-        "ask_to_send_email".
+        Fields that are potentially filtered out include "config_type", "ask_to_send_username", and "ask_to_send_email".
         """
         editable_fields = self.editable_field_names
         noneditable_fields = []
-
-        is_database_config_enabled = database_config_enabled(self.scope_ids.usage_id.context_key)
-        is_external_config_filter_enabled = external_config_filter_enabled(self.scope_ids.usage_id.context_key)
-
-        # If neither additional config_types are enabled, do not display the "config_type" field to users, as "new" is
-        # the only option and does not make sense without other options.
-        if not is_database_config_enabled and not is_external_config_filter_enabled:
-            noneditable_fields.append('config_type')
-
-        # If the enable_external_config_filter is not enabled, do not display the "external_config" field to users.
-        if not is_external_config_filter_enabled:
-            noneditable_fields.append('external_config')
 
         # update the editable fields if this XBlock is configured to not to allow the
         # editing of 'ask_to_send_username' and 'ask_to_send_email'.
