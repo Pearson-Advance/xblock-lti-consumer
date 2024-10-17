@@ -308,6 +308,15 @@ class LtiConsumer1p1:
             'Content-Type': 'application/x-www-form-urlencoded',
         }
 
+        # This block removes any leading or trailing spaces in lti parameters.
+        # We are currently experiencing a launch issue with the Measure UP LTI integration (MUP)
+        # due to some courses having leading or trailing spaces in their names.
+        # We decided to handle this from our side to avoid launch request issues
+        # and due to lack of coordination and communication with the MUP team to fix this from their side.
+        for lti_parameter, lti_parameter_value in lti_parameters.items():
+            if isinstance(lti_parameter_value, str):
+                lti_parameters[lti_parameter] = lti_parameter_value.strip()
+
         oauth_signature = get_oauth_request_signature(
             self.oauth_key,
             self.oauth_secret,
