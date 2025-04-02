@@ -299,6 +299,11 @@ def launch_gate_endpoint(request, suffix=None):  # pylint: disable=unused-argume
         }
         track_event('xblock.launch_request', event)
 
+        # update the launched attribute of the block for the user for LTI 1.3
+        user = compat.get_user_from_external_user_id(launch_data.external_user_id)
+        block = compat.load_block_as_user(lti_config.location)
+        block.update_launched_for_1p3(user)
+
         return render(request, 'html/lti_1p3_launch.html', context)
     except Lti1p3Exception as exc:
         resource_link_id = launch_data.resource_link_id

@@ -583,6 +583,11 @@ class LtiConsumerXBlock(StudioEditableXBlockMixin, XBlock):
         default=False,
         scope=Scope.settings
     )
+    launched = Boolean(
+        help=_("Whether the LTI tool has been launched"),
+        default=False,
+        scope=Scope.user_state
+    )
 
     # Possible editable fields
     editable_field_names = (
@@ -1231,6 +1236,8 @@ class LtiConsumerXBlock(StudioEditableXBlockMixin, XBlock):
         }
         track_event('xblock.launch_request', event)
 
+        self.launched = True
+
         loader = ResourceLoader(__name__)
         context = self._get_context_for_template()
         context.update({'lti_parameters': lti_parameters})
@@ -1714,3 +1721,20 @@ class LtiConsumerXBlock(StudioEditableXBlockMixin, XBlock):
         xblock_body["content_type"] = "LTI Consumer"
 
         return xblock_body
+
+    def update_launched_for_1p3(self, user):
+        """
+        Updates the state of the LTI 1.3 launch for the given user.
+
+        This method performs the following actions:
+        1. Rebinds the no-auth module to the specified user using the runtime's
+           'rebind_user' service.
+        2. Sets the `launched` attribute to True, indicating that the LTI 1.3
+           launch has been successfully completed for the user.
+
+        Args:
+            user: The user object to which the no-auth module should be rebound.
+        """
+        self.runtime.service(self, 'rebind_user').rebind_noauth_module_to_user(self, user)
+        self.launched = True
+        self.save()
