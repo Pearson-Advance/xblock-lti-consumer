@@ -133,14 +133,14 @@ function LtiConsumerXBlock(runtime, element) {
                 // Show the button that triggered the event, i.e. the launch button.
                 triggerElement.show();
                 $dialog_container.remove()
-                $('body').append('<h1>Confirm Dialog Result: <i>Yes</i></h1>');
+                $('body').append('<h1 style="display:none;">Confirm Dialog Result: <i>Yes</i></h1>');
                 def.resolve("OK");
             })
             $dialog_container.find('#cancel-button').click(function () {
                 // Hide the button that triggered the event, i.e. the launch button.
                 triggerElement.show()
                 $dialog_container.remove()
-                $('body').append('<h1>Confirm Dialog Result: <i>No</i></h1>');
+                $('body').append('<h1 style="display:none;">Confirm Dialog Result: <i>No</i></h1>');
                 def.resolve("Cancel");
             })
             return def.promise();
