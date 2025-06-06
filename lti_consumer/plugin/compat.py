@@ -291,3 +291,21 @@ def nrps_pii_disallowed():
     """
     return (hasattr(settings, 'LTI_NRPS_DISALLOW_PII') and
             settings.LTI_NRPS_DISALLOW_PII is True)
+
+
+def are_processors_enabled():
+    """
+    Get 'LTI_CONSUMER_XBLOCK_ENABLE_PROCESSORS' setting from site configurations.
+    to determine if LTI Consumer XBlock processors should be enabled site-wide.
+
+    Returns:
+        True if setting is enabled.
+        False if setting is disabled.
+    """
+    # pylint: disable=import-error,import-outside-toplevel
+    from openedx.core.djangoapps.site_configuration import helpers
+
+    return helpers.get_current_site_configuration().get_value(
+        'LTI_CONSUMER_XBLOCK_ENABLE_PROCESSORS',
+        default=False,
+    )
