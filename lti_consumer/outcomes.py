@@ -11,6 +11,8 @@ from urllib.parse import unquote
 
 from lxml import etree
 from xblockutils.resources import ResourceLoader
+from openedx_events.content_authoring.data import Lti1p1ContentGraded
+from openedx_events.content_authoring.signals import XBLOCK_LTI1P1_GRADED
 
 from .exceptions import LtiError
 from .lti_1p1.oauth import verify_oauth_body_signature
@@ -91,6 +93,24 @@ class OutcomeService:
 
     def __init__(self, xblock):
         self.xblock = xblock
+
+    def emit_graded_event(self, event_data):
+        """
+        Method to emit the XBLOCK_LTI1P1_GRADED.
+
+        Args:
+            event_data (dict): Dictionary containg the input data of the event to be emitted.
+        """
+
+        # .. event_implemented_name: XBLOCK_LTI1P1_GRADED
+        # .. event_type: org.openedx.content_authoring.xblock.lti1p1.content.graded.v1
+        XBLOCK_LTI1P1_GRADED.send_event(
+            graded_content=Lti1p1ContentGraded(
+                user_id=event_data['user_id'],
+                xblock_id=event_data['xblock_id'],
+                anonymous_user_id=event_data['anonymous_user_id'],
+            )
+        )
 
     def handle_request(self, request):
         """
@@ -194,6 +214,12 @@ class OutcomeService:
         if action == 'replaceResultRequest':
             self.xblock.set_user_module_score(real_user, score, self.xblock.max_score())
 
+            event_data = {
+                'user_id': real_user.id,
+                'xblock_id': str(self.xblock.scope_ids.usage_id),
+                'anonymous_user_id': user_id
+            }
+
             values = {
                 'imsx_codeMajor': 'success',
                 'imsx_description': f'Score for {sourced_id} is now {score}',
@@ -201,6 +227,7 @@ class OutcomeService:
                 'response': '<replaceResultResponse/>'
             }
             log.debug("[LTI]: Grade is saved.")
+            self.emit_graded_event(event_data)
             return response_xml_template.format(**values)
 
         unsupported_values['imsx_messageIdentifier'] = escape(imsx_message_identifier)
