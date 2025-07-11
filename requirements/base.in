@@ -18,3 +18,4 @@ django-filter
 jsonfield
 django-config-models         # Configuration models for Django allowing config management with auditing
 openedx-filters
+openedx-events @ git+https://github.com/Pearson-Advance/openedx-events.git@v9.10.0.post2#egg=openedx-events

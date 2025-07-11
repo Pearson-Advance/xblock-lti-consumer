@@ -204,6 +204,8 @@ newrelic==8.5.0
     #   edx-django-utils
 oauthlib==3.2.2
     # via -r requirements/base.txt
+openedx-events @ git+https://github.com/Pearson-Advance/openedx-events.git@v9.10.0.post2#egg=openedx-events
+    # via -r requirements/base.txt
 openedx-filters==0.8.0
     # via -r requirements/base.txt
 pbr==5.11.1

@@ -13,3 +13,4 @@
 
 # Use edx-platform pearson-release/olive.main version
 edx-ccx-keys==1.2.1
+openedx-events @ git+https://github.com/Pearson-Advance/openedx-events.git@v9.10.0.post2#egg=openedx-events
