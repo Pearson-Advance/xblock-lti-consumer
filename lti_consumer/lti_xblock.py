@@ -721,7 +721,7 @@ class LtiConsumerXBlock(StudioEditableXBlockMixin, XBlock):
         """
         Read the parameter processor functions from the settings and return their functions.
         """
-        if not self.enable_processors:
+        if not (self.enable_processors or compat.are_processors_enabled()):
             return
 
         try:

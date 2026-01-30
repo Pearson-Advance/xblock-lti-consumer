@@ -978,6 +978,12 @@ class TestLtiLaunchHandler(TestLtiConsumerXBlock):
         self.mock_external_user_ids_patcher_enabled = self.mock_external_user_ids_patcher.start()
         self.mock_external_user_ids_patcher_enabled.return_value = False
         self.addCleanup(self.mock_external_user_ids_patcher.stop)
+        self._patchare_processors_enabled = patch(
+            "lti_consumer.lti_xblock.compat.are_processors_enabled",
+            return_value=False,
+        )
+        self.mock_patchare_processors_enabled = self._patchare_processors_enabled.start()
+        self.addCleanup(self._patchare_processors_enabled.stop)
 
     @patch('lti_consumer.lti_xblock.LtiConsumerXBlock.course')
     @patch('lti_consumer.lti_xblock.LtiConsumerXBlock.anonymous_user_id', PropertyMock(return_value=FAKE_USER_ID))
@@ -1675,12 +1681,30 @@ class TestProcessorSettings(TestLtiConsumerXBlock):
         'parameter_processors': ['lti_consumer.tests.test_utils:dummy_processor']
     }
 
+    def setUp(self):
+        super().setUp()
+        self._patchare_processors_enabled = patch(
+            "lti_consumer.lti_xblock.compat.are_processors_enabled",
+            return_value=False,
+        )
+        self.mock_patchare_processors_enabled = self._patchare_processors_enabled.start()
+        self.addCleanup(self._patchare_processors_enabled.stop)
+
     def test_no_processors_by_default(self):
         processors = list(self.xblock.get_parameter_processors())
         assert not processors, 'The processor list should empty by default.'
 
     def test_enable_processor(self):
         self.xblock.enable_processors = True
+        with patch('lti_consumer.lti_xblock.LtiConsumerXBlock.get_settings', return_value=self.settings):
+            processors = list(self.xblock.get_parameter_processors())
+            assert len(processors) == 1, 'One processor should be enabled'
+            # pylint: disable=comparison-with-callable
+            assert processors[0] == test_utils.dummy_processor, 'Should load the correct function'
+
+    def test_enable_processor_from_site_configuration(self):
+        self.xblock.enable_processors = False
+        self.mock_patchare_processors_enabled.return_value = True
         with patch('lti_consumer.lti_xblock.LtiConsumerXBlock.get_settings', return_value=self.settings):
             processors = list(self.xblock.get_parameter_processors())
             assert len(processors) == 1, 'One processor should be enabled'
