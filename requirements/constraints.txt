@@ -14,3 +14,7 @@
 urllib3<1.27,>=1.25.4
 
 backports-zoneinfo==0.2.1 ; python_version < "3.9"
+
+# Using openedx-events/filters Pearson fork for Ulmo version
+openedx-events @ git+https://github.com/Pearson-Advance/openedx-events.git@pearson/ulmo#egg=openedx-events
+openedx-filters @ git+https://github.com/Pearson-Advance/openedx-filters.git@pearson/ulmo#egg=openedx-filters
