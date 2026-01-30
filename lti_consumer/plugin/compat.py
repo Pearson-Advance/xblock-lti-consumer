@@ -20,18 +20,6 @@ log = logging.getLogger(__name__)
 # Namespace
 WAFFLE_NAMESPACE = 'lti_consumer'
 
-# Course Waffle Flags
-# .. toggle_name: lti_consumer.enable_external_config_filter
-# .. toggle_implementation: CourseWaffleFlag
-# .. toggle_default: False
-# .. toggle_description: Enables fetching of LTI configurations from external
-#    sources like plugins using openedx-filters mechanism.
-# .. toggle_use_cases: open_edx
-# .. toggle_creation_date: 2022-03-31
-# .. toggle_tickets: https://github.com/openedx/xblock-lti-consumer/pull/239
-# .. toggle_warning: None.
-ENABLE_EXTERNAL_CONFIG_FILTER = 'enable_external_config_filter'
-
 # .. toggle_name: lti_consumer.enable_external_user_id_1p1_launches
 # .. toggle_implementation: CourseWaffleFlag
 # .. toggle_default: False
@@ -65,15 +53,6 @@ ENABLE_DATABASE_CONFIG = 'enable_database_config'
 # .. toggle_tickets: None
 # .. toggle_warning: None.
 ENABLE_EXTERNAL_MULTIPLE_LAUNCH_URLS = 'enable_external_multiple_launch_urls'
-
-
-def get_external_config_waffle_flag():
-    """
-    Import and return Waffle flag for enabling external LTI configuration.
-    """
-    # pylint: disable=import-error,import-outside-toplevel
-    from openedx.core.djangoapps.waffle_utils import CourseWaffleFlag
-    return CourseWaffleFlag(f'{WAFFLE_NAMESPACE}.{ENABLE_EXTERNAL_CONFIG_FILTER}', __name__)
 
 
 def get_external_user_id_1p1_launches_waffle_flag():
@@ -335,3 +314,21 @@ def nrps_pii_disallowed():
     """
     return (hasattr(settings, 'LTI_NRPS_DISALLOW_PII') and
             settings.LTI_NRPS_DISALLOW_PII is True)
+
+
+def are_processors_enabled():
+    """
+    Get 'LTI_CONSUMER_XBLOCK_ENABLE_PROCESSORS' setting from site configurations.
+    to determine if LTI Consumer XBlock processors should be enabled site-wide.
+
+    Returns:
+        True if setting is enabled.
+        False if setting is disabled.
+    """
+    # pylint: disable=import-error,import-outside-toplevel
+    from openedx.core.djangoapps.site_configuration import helpers
+
+    return helpers.get_current_site_configuration().get_value(
+        'LTI_CONSUMER_XBLOCK_ENABLE_PROCESSORS',
+        default=False,
+    )

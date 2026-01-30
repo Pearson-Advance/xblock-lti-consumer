@@ -11,7 +11,6 @@ from django.conf import settings
 from edx_django_utils.cache import get_cache_key, TieredCache
 
 from lti_consumer.plugin.compat import (
-    get_external_config_waffle_flag,
     get_external_user_id_1p1_launches_waffle_flag,
     get_database_config_waffle_flag,
     get_external_multiple_launch_urls_waffle_flag,
@@ -200,16 +199,6 @@ def resolve_custom_parameter_template(xblock, template):
         return template
 
     return template_value
-
-
-def external_config_filter_enabled(course_key):
-    """
-    Returns True if external config filter is enabled for the course via Waffle Flag.
-
-    Arguments:
-        course_key (opaque_keys.edx.locator.CourseLocator): Course Key
-    """
-    return get_external_config_waffle_flag().is_enabled(course_key)
 
 
 def external_user_id_1p1_launches_enabled(course_key):
