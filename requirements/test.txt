@@ -19,7 +19,9 @@ astroid==4.0.3
     #   pylint
     #   pylint-celery
 attrs==25.4.0
-    # via -r requirements/base.txt
+    # via
+    #   -r requirements/base.txt
+    #   openedx-events
 backports-tarfile==1.2.0
     # via jaraco-context
 binaryornot==0.4.4
@@ -62,9 +64,7 @@ coverage[toml]==7.13.2
 coveralls==4.0.2
     # via -r requirements/test.in
 cryptography==46.0.3
-    # via
-    #   -r requirements/test.in
-    #   secretstorage
+    # via -r requirements/test.in
 ddt==1.7.2
     # via -r requirements/test.in
 dill==0.4.1
@@ -81,6 +81,7 @@ dill==0.4.1
     #   djangorestframework
     #   edx-django-utils
     #   jsonfield
+    #   openedx-events
     #   openedx-filters
     #   xblock-sdk
 django-appconf==1.2.0
@@ -115,18 +116,26 @@ docopt==0.6.2
 docutils==0.22.4
     # via readme-renderer
 edx-ccx-keys==2.0.2
-    # via -r requirements/base.txt
+    # via
+    #   -r requirements/base.txt
+    #   openedx-events
 edx-django-utils==8.0.1
     # via
     #   -r requirements/base.txt
     #   django-config-models
+    #   openedx-events
 edx-lint==5.6.0
     # via -r requirements/test.in
 edx-opaque-keys[django]==3.0.0
     # via
     #   -r requirements/base.txt
     #   edx-ccx-keys
+    #   openedx-events
     #   openedx-filters
+fastavro==1.12.1
+    # via
+    #   -r requirements/base.txt
+    #   openedx-events
 fs==2.4.16
     # via
     #   -r requirements/base.txt
@@ -148,10 +157,6 @@ jaraco-context==6.1.0
     # via keyring
 jaraco-functools==4.4.0
     # via keyring
-jeepney==0.9.0
-    # via
-    #   keyring
-    #   secretstorage
 jinja2==3.1.6
     # via
     #   code-annotations
@@ -197,8 +202,14 @@ nh3==0.3.2
     # via readme-renderer
 oauthlib==3.3.1
     # via -r requirements/base.txt
-openedx-filters==2.1.0
-    # via -r requirements/base.txt
+openedx-events @ git+https://github.com/Pearson-Advance/openedx-events.git@pearson/ulmo
+    # via
+    #   -c requirements/constraints.txt
+    #   -r requirements/base.txt
+openedx-filters @ git+https://github.com/Pearson-Advance/openedx-filters.git@pearson/ulmo
+    # via
+    #   -c requirements/constraints.txt
+    #   -r requirements/base.txt
 packaging==26.0
     # via twine
 platformdirs==4.5.1

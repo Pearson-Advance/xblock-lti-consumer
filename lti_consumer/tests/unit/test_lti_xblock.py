@@ -615,13 +615,10 @@ class TestEditableFields(TestLtiConsumerXBlock):
 
     def setUp(self):
         super().setUp()
-        self.mock_filter_enabled_patcher = patch("lti_consumer.lti_xblock.external_config_filter_enabled")
         self.mock_database_config_enabled_patcher = patch("lti_consumer.lti_xblock.database_config_enabled")
-        self.mock_filter_enabled = self.mock_filter_enabled_patcher.start()
         self.mock_database_config_enabled = self.mock_database_config_enabled_patcher.start()
 
     def tearDown(self):
-        self.mock_filter_enabled_patcher.stop()
         self.mock_database_config_enabled_patcher.stop()
         super().tearDown()
 
@@ -689,50 +686,18 @@ class TestEditableFields(TestLtiConsumerXBlock):
             )
         )
 
-    def test_external_config_fields_are_editable_only_when_waffle_flag_is_set(self):
-        """
-        Test that the external configuration fields are editable only when the waffle flag is set.
-        """
-        self.mock_filter_enabled.return_value = True
-        self.assertTrue(self.are_fields_editable(fields=['config_type', 'external_config']))
-
-        self.mock_filter_enabled.return_value = False
-        self.assertFalse(self.are_fields_editable(fields=['config_type', 'external_config']))
-
-    @ddt.idata(product([True, False], [True, False]))
-    @ddt.unpack
-    def test_database_config_fields_are_editable_only_when_waffle_flag_is_set(self, filter_enabled, db_enabled):
-        """
-        Test that the database configuration fields are editable only when the waffle flag is set.
-        """
-        self.mock_filter_enabled.return_value = filter_enabled
-
-        assert_fn = None
-        # If either flag is enabled, 'config_type' should be editable.
-        if db_enabled or filter_enabled:
-            assert_fn = self.assertTrue
-        else:
-            assert_fn = self.assertFalse
-
-        self.mock_database_config_enabled.return_value = db_enabled
-
-        assert_fn(self.are_fields_editable(fields=['config_type']))
-
-    @ddt.idata(product([True, False], [True, False]))
-    @ddt.unpack
-    def test_config_type_values(self, filter_enabled, db_enabled):
+    @ddt.data(True, False)
+    def test_config_type_values(self, db_enabled):
         """
         Test that only the appropriate values for config_type are available as options, depending on the state of the
         appropriate waffle flags.
         """
-        self.mock_filter_enabled.return_value = filter_enabled
         self.mock_database_config_enabled.return_value = db_enabled
 
         values = valid_config_type_values(self.xblock)
 
-        expected_values = ["new"]
-        if self.mock_filter_enabled:
-            expected_values.append('external')
+        expected_values = ["new", "external"]
+
         if self.mock_database_config_enabled:
             expected_values.append('database')
 
@@ -1013,6 +978,12 @@ class TestLtiLaunchHandler(TestLtiConsumerXBlock):
         self.mock_external_user_ids_patcher_enabled = self.mock_external_user_ids_patcher.start()
         self.mock_external_user_ids_patcher_enabled.return_value = False
         self.addCleanup(self.mock_external_user_ids_patcher.stop)
+        self._patchare_processors_enabled = patch(
+            "lti_consumer.lti_xblock.compat.are_processors_enabled",
+            return_value=False,
+        )
+        self.mock_patchare_processors_enabled = self._patchare_processors_enabled.start()
+        self.addCleanup(self._patchare_processors_enabled.stop)
 
     @patch('lti_consumer.lti_xblock.LtiConsumerXBlock.course')
     @patch('lti_consumer.lti_xblock.LtiConsumerXBlock.anonymous_user_id', PropertyMock(return_value=FAKE_USER_ID))
@@ -1710,12 +1681,30 @@ class TestProcessorSettings(TestLtiConsumerXBlock):
         'parameter_processors': ['lti_consumer.tests.test_utils:dummy_processor']
     }
 
+    def setUp(self):
+        super().setUp()
+        self._patchare_processors_enabled = patch(
+            "lti_consumer.lti_xblock.compat.are_processors_enabled",
+            return_value=False,
+        )
+        self.mock_patchare_processors_enabled = self._patchare_processors_enabled.start()
+        self.addCleanup(self._patchare_processors_enabled.stop)
+
     def test_no_processors_by_default(self):
         processors = list(self.xblock.get_parameter_processors())
         assert not processors, 'The processor list should empty by default.'
 
     def test_enable_processor(self):
         self.xblock.enable_processors = True
+        with patch('lti_consumer.lti_xblock.LtiConsumerXBlock.get_settings', return_value=self.settings):
+            processors = list(self.xblock.get_parameter_processors())
+            assert len(processors) == 1, 'One processor should be enabled'
+            # pylint: disable=comparison-with-callable
+            assert processors[0] == test_utils.dummy_processor, 'Should load the correct function'
+
+    def test_enable_processor_from_site_configuration(self):
+        self.xblock.enable_processors = False
+        self.mock_patchare_processors_enabled.return_value = True
         with patch('lti_consumer.lti_xblock.LtiConsumerXBlock.get_settings', return_value=self.settings):
             processors = list(self.xblock.get_parameter_processors())
             assert len(processors) == 1, 'One processor should be enabled'
@@ -1781,15 +1770,12 @@ class TestLtiConsumer1p3XBlock(TestCase):
         }
         self.xblock = make_xblock('lti_consumer', LtiConsumerXBlock, self.xblock_attributes)
 
-        self.mock_filter_enabled_patcher = patch("lti_consumer.lti_xblock.external_config_filter_enabled")
         self.mock_database_config_enabled_patcher = patch("lti_consumer.lti_xblock.database_config_enabled")
         self.mock_external_multiple_launch_urls_enabled = patch(
             "lti_consumer.lti_xblock.external_multiple_launch_urls_enabled"
         )
-        self.mock_filter_enabled = self.mock_filter_enabled_patcher.start()
         self.mock_database_config_enabled = self.mock_database_config_enabled_patcher.start()
         self.mock_external_multiple_launch_urls_enabled.start()
-        self.addCleanup(self.mock_filter_enabled_patcher.stop)
         self.addCleanup(self.mock_database_config_enabled_patcher.stop)
         self.addCleanup(self.mock_external_multiple_launch_urls_enabled.stop)
 

@@ -13,7 +13,9 @@ asgiref==3.11.0
     #   -r requirements/base.txt
     #   django
 attrs==25.4.0
-    # via -r requirements/base.txt
+    # via
+    #   -r requirements/base.txt
+    #   openedx-events
 bleach==6.3.0
     # via -r requirements/base.txt
 cffi==2.0.0
@@ -26,6 +28,7 @@ click==8.3.1
     #   edx-django-utils
 django==5.2.10
     # via
+    #   -c requirements/common_constraints.txt
     #   -r requirements/base.txt
     #   django-appconf
     #   django-config-models
@@ -37,6 +40,7 @@ django==5.2.10
     #   edx-django-utils
     #   edx-i18n-tools
     #   jsonfield
+    #   openedx-events
     #   openedx-filters
 django-appconf==1.2.0
     # via
@@ -65,18 +69,26 @@ dnspython==2.8.0
     #   -r requirements/base.txt
     #   pymongo
 edx-ccx-keys==2.0.2
-    # via -r requirements/base.txt
+    # via
+    #   -r requirements/base.txt
+    #   openedx-events
 edx-django-utils==8.0.1
     # via
     #   -r requirements/base.txt
     #   django-config-models
+    #   openedx-events
 edx-i18n-tools==1.9.0
     # via -r requirements/dev.in
 edx-opaque-keys[django]==3.0.0
     # via
     #   -r requirements/base.txt
     #   edx-ccx-keys
+    #   openedx-events
     #   openedx-filters
+fastavro==1.12.1
+    # via
+    #   -r requirements/base.txt
+    #   openedx-events
 fs==2.4.16
     # via
     #   -r requirements/base.txt
@@ -104,7 +116,9 @@ markupsafe==3.0.3
     #   xblock
 oauthlib==3.3.1
     # via -r requirements/base.txt
-openedx-filters==2.1.0
+openedx-events @ git+https://github.com/Pearson-Advance/openedx-events.git@pearson/ulmo
+    # via -r requirements/base.txt
+openedx-filters @ git+https://github.com/Pearson-Advance/openedx-filters.git@pearson/ulmo
     # via -r requirements/base.txt
 path==16.16.0
     # via edx-i18n-tools
