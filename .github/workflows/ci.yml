@@ -2,7 +2,7 @@ name: Python CI
 
 on:
   push:
-    branches: [master]
+    branches: [master, pearson/ulmo]
   pull_request:
     branches:
     - '**'
