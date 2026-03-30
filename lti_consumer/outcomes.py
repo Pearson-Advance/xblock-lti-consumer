@@ -196,9 +196,9 @@ class OutcomeService:
             return response_xml_template.format(**failure_values)
 
         # Verify OAuth signing.
-        __, secret = self.xblock.lti_provider_key_secret
+        lti_consumer = self.xblock._get_lti_consumer()  # pylint: disable=protected-access
         try:
-            verify_oauth_body_signature(request, secret, self.xblock.outcome_service_url)
+            verify_oauth_body_signature(request, lti_consumer.oauth_secret, self.xblock.outcome_service_url)
         except (ValueError, LtiError) as ex:
             failure_values['imsx_messageIdentifier'] = escape(imsx_message_identifier)
             error_message = "OAuth verification error: " + escape(str(ex))
