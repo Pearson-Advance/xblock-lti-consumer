@@ -213,7 +213,10 @@ class LtiNrpsContextMembershipViewsetTestCase(LtiNrpsTestCase):
         response = self.client.get(self.context_membership_endpoint)
         self.assertEqual(response.status_code, 403)
 
-    @patch('lti_consumer.plugin.views.get_lti_pii_sharing_state_for_course', Mock(return_value=False))
+    @patch(
+        'lti_consumer.plugin.compat.get_pii_sharing_waffle_flag',
+        Mock(is_enabled=Mock(return_value=False)),
+    )
     @patch(
         'lti_consumer.plugin.views.compat.get_course_members',
         Mock(side_effect=patch_get_memberships()),
@@ -227,24 +230,27 @@ class LtiNrpsContextMembershipViewsetTestCase(LtiNrpsTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response['content-type'], 'application/vnd.ims.lti-nrps.v2.membershipcontainer+json')
 
-    @patch('lti_consumer.plugin.views.get_lti_pii_sharing_state_for_course', return_value=False)
+    @patch(
+        'lti_consumer.plugin.views.compat.get_pii_sharing_waffle_flag'
+    )
     @patch(
         'lti_consumer.plugin.views.compat.get_course_members',
         Mock(side_effect=patch_get_memberships({
             'student': 4
         })),
     )
-    def test_get_without_pii(self, expose_pii_fields_patcher):
+    def test_get_without_pii(self, get_pii_sharing_waffle_flag_mock):
         """
         Test context membership endpoint response structure with PII not exposed.
         """
+        get_pii_sharing_waffle_flag_mock.return_value.is_enabled.return_value = False
         self._set_lti_token('https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly')
         response = self.client.get(self.context_membership_endpoint)
         self.assertEqual(response.data['id'], 'http://testserver{}'.format(self.context_membership_endpoint))
         self.assertEqual(len(response.data['members']), 4)
         self.assertEqual(response.has_header('Link'), False)
 
-        expose_pii_fields_patcher.assert_called()
+        get_pii_sharing_waffle_flag_mock.assert_called()
 
         # name & email should not be exposed.
         member_fields = response.data['members'][0].keys()
@@ -254,17 +260,20 @@ class LtiNrpsContextMembershipViewsetTestCase(LtiNrpsTestCase):
         self.assertNotIn('email', member_fields)
         self.assertNotIn('name', member_fields)
 
-    @patch('lti_consumer.plugin.views.get_lti_pii_sharing_state_for_course', return_value=True)
+    @patch(
+        'lti_consumer.plugin.views.compat.get_pii_sharing_waffle_flag'
+    )
     @patch(
         'lti_consumer.plugin.views.compat.get_course_members',
         Mock(side_effect=patch_get_memberships({
             'student': 4
         })),
     )
-    def test_get_with_pii(self, expose_pii_fields_patcher):
+    def test_get_with_pii(self, get_pii_sharing_waffle_flag_mock):
         """
         Test context membership endpoint response structure with PII exposed.
         """
+        get_pii_sharing_waffle_flag_mock.return_value.is_enabled.return_value = True
         self._set_lti_token('https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly')
         response = self.client.get(self.context_membership_endpoint)
 
@@ -272,7 +281,7 @@ class LtiNrpsContextMembershipViewsetTestCase(LtiNrpsTestCase):
         self.assertEqual(len(response.data['members']), 4)
         self.assertEqual(response.has_header('Link'), False)
 
-        expose_pii_fields_patcher.assert_called()
+        get_pii_sharing_waffle_flag_mock.assert_called()
 
         # name & email should be present along with user_id, roles etc.
         member_fields = response.data['members'][0].keys()
@@ -282,7 +291,10 @@ class LtiNrpsContextMembershipViewsetTestCase(LtiNrpsTestCase):
         self.assertIn('email', member_fields)
         self.assertIn('name', member_fields)
 
-    @patch('lti_consumer.plugin.views.get_lti_pii_sharing_state_for_course', Mock(return_value=False))
+    @patch(
+        'lti_consumer.plugin.views.compat.get_pii_sharing_waffle_flag',
+        Mock(is_enabled=Mock(return_value=False)),
+    )
     @patch(
         'lti_consumer.plugin.views.compat.get_course_members',
         Mock(side_effect=patch_get_memberships({

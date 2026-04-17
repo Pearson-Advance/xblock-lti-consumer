@@ -739,22 +739,7 @@ class LtiConsumerXBlock(StudioEditableXBlockMixin, XBlock):
         fields ask_to_send_username, ask_to_send_full_name, and ask_to_send_email are displayed in Studio and whether
         these data are shared in LTI launches, regardless of the values of the settings on the XBlock.
         """
-        config_service = self.runtime.service(self, 'lti-configuration')
-        if config_service:
-            is_already_sharing_learner_info = (
-                self.ask_to_send_username or
-                self.ask_to_send_full_name or
-                self.ask_to_send_email
-            )
-            return config_service.configuration.lti_access_to_learners_editable(
-                self.scope_ids.usage_id.context_key,
-                is_already_sharing_learner_info,
-            )
-
-        # TODO: The LTI configuration service is currently only available from the studio_view. This means that
-        #       the CourseAllowPIISharingInLTIFlag does not control PII sharing in the author_view or student_view,
-        #       because the service is not defined in those contexts.
-        return True
+        return compat.get_pii_sharing_waffle_flag().is_enabled()
 
     @property
     def editable_fields(self):

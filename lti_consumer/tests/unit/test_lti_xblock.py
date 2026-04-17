@@ -27,7 +27,6 @@ from lti_consumer.lti_1p3.tests.utils import create_jwt
 from lti_consumer.tests import test_utils
 from lti_consumer.tests.test_utils import (
     FAKE_USER_ID,
-    get_mock_lti_configuration,
     make_jwt_request,
     make_request,
     make_xblock,
@@ -631,36 +630,25 @@ class TestEditableFields(TestLtiConsumerXBlock):
         """
         return all(field in self.xblock.editable_fields for field in fields)
 
-    def test_editable_fields_with_no_config(self):
-        """
-        Test that LTI XBlock's fields (i.e. 'ask_to_send_username', 'ask_to_send_full_name', and 'ask_to_send_email')
-        are editable when lti-configuration service is not provided.
-        """
-        self.xblock.runtime.service.return_value = None
-        # Assert that 'ask_to_send_username', 'ask_to_send_full_name', and 'ask_to_send_email' are editable.
-        self.assertTrue(
-            self.are_fields_editable(fields=['ask_to_send_username', 'ask_to_send_full_name', 'ask_to_send_email'])
-        )
-
-    def test_editable_fields_when_editing_allowed(self):
+    @patch('lti_consumer.lti_xblock.compat.get_pii_sharing_waffle_flag')
+    def test_editable_fields_when_editing_allowed(self, get_pii_sharing_waffle_flag_mock):
         """
         Test that LTI XBlock's fields (i.e. 'ask_to_send_username', 'ask_to_send_full_name', and 'ask_to_send_email')
         are editable when this XBlock is configured to allow it.
         """
-        # this XBlock is configured to allow editing of LTI fields
-        self.xblock.runtime.service.return_value = get_mock_lti_configuration(editable=True)
+        get_pii_sharing_waffle_flag_mock.return_value.is_enabled.return_value = True
         # Assert that 'ask_to_send_username', 'ask_to_send_full_name', and 'ask_to_send_email' are editable.
         self.assertTrue(
             self.are_fields_editable(fields=['ask_to_send_username', 'ask_to_send_full_name', 'ask_to_send_email'])
         )
 
-    def test_editable_fields_when_editing_not_allowed(self):
+    @patch('lti_consumer.lti_xblock.compat.get_pii_sharing_waffle_flag')
+    def test_editable_fields_when_editing_not_allowed(self, get_pii_sharing_waffle_flag_mock):
         """
         Test that LTI XBlock's fields (i.e. 'ask_to_send_username', 'ask_to_send_full_name', and 'ask_to_send_email')
         are not editable when this XBlock is configured to not to allow it.
         """
-        # this XBlock is configured to not to allow editing of LTI fields
-        self.xblock.runtime.service.return_value = get_mock_lti_configuration(editable=False)
+        get_pii_sharing_waffle_flag_mock.return_value.is_enabled.return_value = False
         # Assert that 'ask_to_send_username', 'ask_to_send_full_name', and 'ask_to_send_email' are not editable.
         self.assertFalse(
             self.are_fields_editable(fields=['ask_to_send_username', 'ask_to_send_full_name', 'ask_to_send_email'])
@@ -1926,7 +1914,8 @@ class TestLtiConsumer1p3XBlock(TestCase):
 
         self.assertEqual(self.xblock.get_context_title(), "DemoX - edX")
 
-    def test_studio_view(self):
+    @patch('lti_consumer.lti_xblock.compat.get_pii_sharing_waffle_flag')
+    def test_studio_view(self, mock_get_pii_sharing_waffle_flag):  # pylint: disable=unused-argument
         """
         Test that the studio settings view load the custom js.
         """
@@ -1955,9 +1944,15 @@ class TestLtiConsumer1p3XBlock(TestCase):
         self.assertIn("mock-keyset_url", response.content)
         self.assertIn("mock-token_url", response.content)
 
+    @patch('lti_consumer.lti_xblock.compat.get_pii_sharing_waffle_flag')
     @patch('lti_consumer.lti_xblock.LtiConsumerXBlock.get_lti_1p3_launch_data')
     @patch('lti_consumer.api.get_lti_1p3_content_url')
-    def test_student_view(self, mock_get_lti_1p3_content_url, mock_get_lti_1p3_launch_data):
+    def test_student_view(
+        self,
+        mock_get_lti_1p3_content_url,
+        mock_get_lti_1p3_launch_data,
+        mock_get_pii_sharing_waffle_flag,  # pylint: disable=unused-argument
+    ):
         """
         Test that the student view is displayed as expected
         """
@@ -1986,6 +1981,7 @@ class TestLtiConsumer1p3XBlock(TestCase):
         self.assertEqual(response.js_init_fn, 'LtiConsumerXBlock')
         self.assertNotIn("LTI 1.3 Launches can only be performed from the LMS", response.content)
 
+    @patch('lti_consumer.lti_xblock.compat.get_pii_sharing_waffle_flag')
     @patch('lti_consumer.lti_xblock.LtiConsumerXBlock.get_lti_1p3_launch_data')
     @patch('lti_consumer.api.get_lti_1p3_launch_info')
     @patch('lti_consumer.api.get_lti_1p3_content_url')
@@ -1994,6 +1990,7 @@ class TestLtiConsumer1p3XBlock(TestCase):
         mock_get_lti_1p3_content_url,
         mock_get_launch_info,
         mock_get_lti_1p3_launch_data,
+        mock_get_pii_sharing_waffle_flag,  # pylint: disable=unused-argument
     ):
         """
         Test that the author view content is displayed with the student view when viewed by a staff user.
@@ -2344,45 +2341,25 @@ class TestSubmitStudioEditsHandler(TestLtiConsumerXBlock):
         self.addCleanup(external_config_flag_patcher.stop)
 
 
-@ddt.ddt
 class TestGetPiiSharingEnabled(TestLtiConsumerXBlock):
     """
     Unit tests for LtiConsumerXBlock.get_pii_sharing_enabled.
     """
-    def test_no_service(self):
+
+    @patch('lti_consumer.lti_xblock.compat.get_pii_sharing_waffle_flag')
+    def test_with_flag_disabled(self, mock_get_pii_sharing_waffle_flag):
+        """
+        Test with disabled flag.
+        """
+        mock_get_pii_sharing_waffle_flag.return_value.is_enabled.return_value = False
+
+        self.assertFalse(self.xblock.get_pii_sharing_enabled())
+
+    @patch('lti_consumer.lti_xblock.compat.get_pii_sharing_waffle_flag')
+    def test_with_flag_enabled(self, mock_get_pii_sharing_waffle_flag):
+        """
+        Test with enabled flag.
+        """
+        mock_get_pii_sharing_waffle_flag.return_value.is_enabled.return_value = True
+
         self.assertTrue(self.xblock.get_pii_sharing_enabled())
-
-    @ddt.data(True, False)
-    def test_lti_access_to_learners_editable(self, lti_access_to_learners_editable):
-        """
-        Test that the get_pii_sharing_enabled method returns the value of calling the lti_access_to_learners_editable
-        method of the LTI configuration service, so long as as the configuration service is available and defined.
-        """
-        self.xblock.runtime.service.return_value = get_mock_lti_configuration(
-            editable=lti_access_to_learners_editable
-        )
-        self.assertEqual(self.xblock.get_pii_sharing_enabled(), lti_access_to_learners_editable)
-
-    @ddt.idata(product([True, False], [True, False], [True, False]))
-    @ddt.unpack
-    def test_lti_access_to_learners_editable_args(self, ask_to_send_username, ask_to_send_full_name, ask_to_send_email):
-        """
-        Test that the lti_access_to_learners_editable_mock method of the LTI configuration service is called with the
-        the correct arguments.
-        """
-        lti_configuration = Mock()
-        lti_configuration.configuration = Mock()
-        lti_access_to_learners_editable_mock = Mock()
-        lti_configuration.configuration.lti_access_to_learners_editable = lti_access_to_learners_editable_mock
-        self.xblock.runtime.service.return_value = lti_configuration
-
-        self.xblock.ask_to_send_username = ask_to_send_username
-        self.xblock.ask_to_send_full_name = ask_to_send_full_name
-        self.xblock.ask_to_send_email = ask_to_send_email
-
-        self.xblock.get_pii_sharing_enabled()
-
-        lti_access_to_learners_editable_mock.assert_called_once_with(
-            self.xblock.scope_ids.usage_id.context_key,
-            ask_to_send_username or ask_to_send_full_name or ask_to_send_email,
-        )

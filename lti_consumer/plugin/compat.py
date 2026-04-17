@@ -54,6 +54,16 @@ ENABLE_DATABASE_CONFIG = 'enable_database_config'
 # .. toggle_warning: None.
 ENABLE_EXTERNAL_MULTIPLE_LAUNCH_URLS = 'enable_external_multiple_launch_urls'
 
+# .. toggle_name: lti_consumer.allow_pii_sharing
+# .. toggle_implementation: WaffleSwitch
+# .. toggle_default: False
+# .. toggle_description: Allows sharing of PII data across the platform.
+# .. toggle_use_cases: open_edx
+# .. toggle_creation_date: 2026-04-15
+# .. toggle_tickets: None
+# .. toggle_warning: None.
+ALLOW_PII_SHARING = 'allow_pii_sharing'
+
 
 def get_external_user_id_1p1_launches_waffle_flag():
     """
@@ -77,6 +87,15 @@ def get_external_multiple_launch_urls_waffle_flag():  # pragma: nocover
     # pylint: disable=import-error,import-outside-toplevel
     from openedx.core.djangoapps.waffle_utils import CourseWaffleFlag
     return CourseWaffleFlag(f'{WAFFLE_NAMESPACE}.{ENABLE_EXTERNAL_MULTIPLE_LAUNCH_URLS}', __name__)
+
+
+def get_pii_sharing_waffle_flag():
+    """"
+    Import and return Waffle flag for allowing sharing of PII data across the platform.
+    """
+    # pylint: disable=import-error,import-outside-toplevel
+    from edx_toggles.toggles import WaffleSwitch
+    return WaffleSwitch(f'{WAFFLE_NAMESPACE}.{ALLOW_PII_SHARING}', __name__)
 
 
 def load_enough_xblock(location):  # pragma: nocover
