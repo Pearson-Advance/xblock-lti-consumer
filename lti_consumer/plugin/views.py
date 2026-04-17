@@ -25,7 +25,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND
 
-from lti_consumer.api import get_lti_pii_sharing_state_for_course, validate_lti_1p3_launch_data
+from lti_consumer.api import validate_lti_1p3_launch_data
 from lti_consumer.exceptions import LtiError, ExternalConfigurationNotFound
 from lti_consumer.lti_1p3.consumer import LtiConsumer1p3, LtiProctoringConsumer
 from lti_consumer.lti_1p3.exceptions import (BadJwtSignature, InvalidClaimValue, Lti1p3Exception,
@@ -818,8 +818,7 @@ class LtiNrpsContextMembershipViewSet(viewsets.ReadOnlyModelViewSet):
         Overrides ModelViewSet's `get_serializer_class` method.
         Checks if PII fields can be exposed and returns appropiate serializer.
         """
-        if (not compat.nrps_pii_disallowed() and
-                get_lti_pii_sharing_state_for_course(self.request.lti_configuration.location.course_key)):
+        if (not compat.nrps_pii_disallowed() and compat.get_pii_sharing_waffle_flag().is_enabled()):
             return LtiNrpsContextMembershipPIISerializer
         else:
             return LtiNrpsContextMembershipBasicSerializer
