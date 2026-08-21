@@ -171,5 +171,6 @@ class TestLtiEmbed(TestCase):
                 'lti_version': 'LTI_1p1',
                 'user_roles': self.roles,
                 'launch_url': self.lti_launch_url,
+                'custom_parameters': {},
             }
         )

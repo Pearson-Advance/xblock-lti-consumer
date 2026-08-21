@@ -363,7 +363,10 @@ def launch_gate_endpoint(request, suffix=None):  # pylint: disable=unused-argume
         event = {
             'lti_version': lti_config.version,
             'user_roles': user_role,
-            'launch_url': context['launch_url']
+            'launch_url': context['launch_url'],
+            'context_id': launch_data.context_id,
+            'resource_link_id': launch_data.resource_link_id,
+            'custom_parameters': launch_data.custom_parameters,
         }
         track_event('xblock.launch_request', event)
 

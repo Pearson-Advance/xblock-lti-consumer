@@ -133,6 +133,7 @@ def lti_embed(
         'lti_version': lti_parameters.get('lti_version'),
         'user_roles': lti_parameters.get('roles'),
         'launch_url': lti_consumer.lti_launch_url,
+        'custom_parameters': custom_parameters,
     }
     track_event('embed.launch_request', event)
 
