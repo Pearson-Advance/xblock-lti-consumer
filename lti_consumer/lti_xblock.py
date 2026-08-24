@@ -1295,12 +1295,15 @@ class LtiConsumerXBlock(StudioEditableXBlockMixin, XBlock):
             lti_consumer.set_launch_presentation_locale(real_user_data['user_language'])
 
         lti_consumer.set_custom_parameters(self.prefixed_custom_parameters)
+        extra_claims = {}
 
         for processor in self.get_parameter_processors():
             try:
                 default_params = getattr(processor, 'lti_xblock_default_params', {})
+                extra_claims = processor(self) or {}
                 lti_consumer.set_extra_claims(default_params)
-                lti_consumer.set_extra_claims(processor(self) or {})
+                lti_consumer.set_extra_claims(extra_claims)
+                extra_claims.update(dict(default_params, **extra_claims))
             except Exception:  # pylint: disable=broad-except
                 # Log the error without causing a 500-error.
                 # Useful for catching casual runtime errors in the processors.
@@ -1313,6 +1316,7 @@ class LtiConsumerXBlock(StudioEditableXBlockMixin, XBlock):
             'lti_version': lti_parameters.get('lti_version'),
             'user_roles': lti_parameters.get('roles'),
             'launch_url': lti_consumer.lti_launch_url,
+            'custom_parameters': {**self.prefixed_custom_parameters, **extra_claims},
         }
         track_event('xblock.launch_request', event)
 

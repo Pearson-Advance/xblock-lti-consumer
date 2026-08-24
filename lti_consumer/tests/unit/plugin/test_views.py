@@ -350,6 +350,39 @@ class TestLti1p3LaunchGateEndpoint(TestCase):
         self.assertIn("state", content)
         self.assertIn("hello-world", content)
 
+    @patch('lti_consumer.plugin.views.track_event')
+    def test_lti_launch_response_tracks_all_event_data(self, mock_track_event):
+        """
+        Check that launch tracking events include all expected launch metadata.
+        """
+        self.launch_data.context_id = 'course-v1:testX+TST101+2026_T2'
+        self.launch_data.resource_link_id = 'resource_link_id'
+        self.launch_data.custom_parameters = {'test': 'value'}
+        launch_data_key = cache_lti_1p3_launch_data(self.launch_data)
+
+        params = {
+            "nonce": "nonce-value",
+            "state": "hello-world",
+            "redirect_uri": "https://tool.example",
+            "client_id": self.config.lti_1p3_client_id,
+            "login_hint": self.launch_data.user_id,
+            "lti_message_hint": launch_data_key,
+        }
+        response = self.client.get(self.url, params)
+
+        self.assertEqual(response.status_code, 200)
+        mock_track_event.assert_called_once_with(
+            'xblock.launch_request',
+            {
+                'lti_version': 'lti_1p3',
+                'user_roles': 'student',
+                'launch_url': 'https://tool.example',
+                'context_id': 'course-v1:testX+TST101+2026_T2',
+                'resource_link_id': 'resource_link_id',
+                'custom_parameters': {'test': 'value'},
+            }
+        )
+
     def test_launch_callback_endpoint_fails(self):
         """
         Test that the LTI 1.3 callback endpoint correctly display an error message.

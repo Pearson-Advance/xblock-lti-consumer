@@ -1044,6 +1044,11 @@ class TestLtiLaunchHandler(TestLtiConsumerXBlock):
                 'lti_version': 'LTI_1p3',
                 'user_roles': 'Student',
                 'launch_url': 'https://test.co',
+                'custom_parameters': {
+                    'custom_component_display_name': 'LTI Consumer',
+                    'custom_component_due_date': self.xblock.due.strftime('%Y-%m-%d %H:%M:%S'),
+                    'custom_component_graceperiod': str(self.xblock.graceperiod.total_seconds()),
+                },
             }
         )
 
