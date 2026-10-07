@@ -16,6 +16,26 @@ Please See the `releases tab <https://github.com/openedx/xblock-lti-consumer/rel
 Unreleased
 ~~~~~~~~~~
 
+9.14.3.post1 - 2026-10-07
+-------------------------
+
+Added
+~~~~~
+* Emit ``XBLOCK_LTI1P1_GRADED`` when an LTI 1.1 grade is saved.
+* Allow parameter processors to be enabled through the site configuration
+  setting ``LTI_CONSUMER_XBLOCK_ENABLE_PROCESSORS``.
+* Include custom parameters and processor extra claims in launch tracking.
+
+Changed
+~~~~~~~
+* Make reusable external LTI configurations available in all courses.
+* Use the site-wide PII-sharing flag instead of per-course configuration.
+
+Fixed
+~~~~~
+* Retrieve the Outcome Service OAuth secret from the configured LTI consumer.
+* Strip leading and trailing whitespace from LTI launch parameters.
+
 9.14.2 - 2025-08-06
 -------------------
 * Deprecation/Removal of pyjwkest
